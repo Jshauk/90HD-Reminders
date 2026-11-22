@@ -1,0 +1,23 @@
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Android (also covered by android/.gitignore)
+**/build/
+**/.gradle/
+**/.kotlin/
+**/local.properties
+**/captures/
+.externalNativeBuild
+.cxx
+
+# Python backend (also covered by backend/.gitignore)
+**/__pycache__/
+*.pyc
+.venv/
+.env
+
+# Backend data / databases
+backend/data/
+*.db

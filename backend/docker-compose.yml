@@ -1,0 +1,29 @@
+services:
+  ninety-hd:
+    build: .
+    container_name: 90hd
+    ports:
+      - "8090:8000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=sqlite:///data/90hd.db
+      # Optional bearer auth for the backend API (off by default; Tailscale/LAN).
+      # - AUTH_ENABLED=true
+      # - AUTH_TOKEN=${AUTH_TOKEN}
+
+  # Pebble Index MCP bridge. Talks to the backend over the internal Docker
+  # network; only this service is exposed publicly (via Tailscale Funnel).
+  mcp-server:
+    build: ./mcp
+    container_name: 90hd-mcp
+    ports:
+      - "8091:8001"
+    restart: unless-stopped
+    depends_on:
+      - ninety-hd
+    environment:
+      - BACKEND_URL=http://ninety-hd:8000
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
+      - TZ=America/Indiana/Indianapolis

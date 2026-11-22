@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- The backend is self-hosted and reached by user-entered LAN/Tailscale address
+     over plain HTTP, so cleartext must be allowed. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

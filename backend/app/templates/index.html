@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>90HD - Reminders</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        h1 { color: #00d4aa; margin-bottom: 0.5rem; font-size: 2rem; }
+        .subtitle { color: #888; margin-bottom: 2rem; }
+        .container { max-width: 900px; margin: 0 auto; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 0; margin-bottom: 2rem; }
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: #16213e;
+            border: 1px solid #0f3460;
+            cursor: pointer;
+            color: #aaa;
+            transition: all 0.2s;
+        }
+        .tab:first-child { border-radius: 8px 0 0 8px; }
+        .tab:last-child { border-radius: 0 8px 8px 0; }
+        .tab.active { background: #0f3460; color: #00d4aa; border-color: #00d4aa; }
+
+        /* Form */
+        .form-section {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #0f3460;
+        }
+        .form-section h2 { color: #00d4aa; margin-bottom: 1rem; font-size: 1.2rem; }
+        .form-row { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .form-group { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+        .form-group.full { flex: 100%; }
+        label { color: #aaa; font-size: 0.85rem; margin-bottom: 0.3rem; }
+        input, select {
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid #0f3460;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 0.95rem;
+        }
+        input:focus, select:focus { outline: none; border-color: #00d4aa; }
+        .btn {
+            padding: 0.6rem 1.5rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #00d4aa; color: #1a1a2e; }
+        .btn-primary:hover { background: #00f5c4; }
+        .btn-danger { background: #e94560; color: white; }
+        .btn-danger:hover { background: #ff5577; }
+        .btn-secondary { background: #0f3460; color: #aaa; }
+        .btn-secondary:hover { background: #1a4a7a; color: #eee; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+
+        /* Reminder list */
+        .reminder-list { display: flex; flex-direction: column; gap: 1rem; }
+        .reminder-card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 1.25rem;
+            border: 1px solid #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .reminder-card.inactive { opacity: 0.5; }
+        .reminder-info { flex: 1; }
+        .reminder-text { font-size: 1.1rem; margin-bottom: 0.4rem; }
+        .reminder-meta { color: #888; font-size: 0.85rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+        .reminder-actions { display: flex; gap: 0.5rem; }
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            background: #0f3460;
+            color: #00d4aa;
+        }
+        .badge-inactive { background: #3d1f2e; color: #e94560; }
+
+        /* Settings */
+        .settings-section { display: none; }
+        .settings-section.active { display: block; }
+        .reminders-section { display: block; }
+        .reminders-section.active { display: block; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        .toast.show { opacity: 1; }
+        .toast.success { background: #00d4aa; color: #1a1a2e; }
+        .toast.error { background: #e94560; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid #0f3460;
+            max-width: 500px;
+            width: 90%;
+        }
+        .modal h3 { color: #00d4aa; margin-bottom: 1rem; }
+        .modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            .form-row { flex-direction: column; }
+            .reminder-card { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>90HD</h1>
+        <p class="subtitle">Persistent Reminders</p>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('reminders')">Reminders</div>
+            <div class="tab" onclick="switchTab('settings')">Settings</div>
+        </div>
+
+        <!-- Reminders Tab -->
+        <div class="reminders-section active" id="reminders-tab">
+            <div class="form-section">
+                <h2 id="form-title">New Reminder</h2>
+                <input type="hidden" id="edit-id">
+                <div class="form-row">
+                    <div class="form-group full">
+                        <label for="text">Reminder Text</label>
+                        <input type="text" id="text" placeholder="What do you need to remember?" maxlength="500">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="frequency_value">Every</label>
+                        <input type="number" id="frequency_value" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="frequency_unit">Unit</label>
+                        <select id="frequency_unit">
+                            <option value="minutes">Minutes</option>
+                            <option value="hours">Hours</option>
+                            <option value="days" selected>Days</option>
+                            <option value="weeks">Weeks</option>
+                            <option value="months">Months</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="start_time">Start Time</label>
+                        <input type="time" id="start_time" value="08:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_time">End Time (optional)</label>
+                        <input type="time" id="end_time">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="active_hours_start">Active Hours Start (override)</label>
+                        <input type="time" id="active_hours_start" placeholder="Default from settings">
+                    </div>
+                    <div class="form-group">
+                        <label for="active_hours_end">Active Hours End (override)</label>
+                        <input type="time" id="active_hours_end" placeholder="Default from settings">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <button class="btn btn-primary" onclick="saveReminder()">Save Reminder</button>
+                    <button class="btn btn-secondary" onclick="resetForm()" id="cancel-btn" style="display:none">Cancel</button>
+                </div>
+            </div>
+
+            <div class="form-row" style="align-items:center; justify-content:space-between;">
+                <button class="btn btn-secondary" onclick="loadReminders()">↻ Refresh</button>
+                <span id="last-updated" style="color:#888; font-size:0.8rem;"></span>
+            </div>
+
+            <div class="reminder-list" id="reminder-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="settings-section" id="settings-tab">
+            <div class="form-section">
+                <h2>Default Active Hours</h2>
+                <p style="color:#888; margin-bottom:1rem; font-size:0.9rem;">
+                    Notifications will only fire during these hours unless overridden per-reminder.
+                </p>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="settings_start">Start</label>
+                        <input type="time" id="settings_start" value="08:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="settings_end">End</label>
+                        <input type="time" id="settings_end" value="22:00">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="settings_time_format">Time Format</label>
+                        <select id="settings_time_format">
+                            <option value="12h">12-hour (AM/PM)</option>
+                            <option value="24h">24-hour</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <h3>Delete Reminder</h3>
+            <p>Are you sure you want to delete this reminder?</p>
+            <p id="delete-reminder-text" style="color:#00d4aa; margin-top:0.5rem;"></p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API = '/api';
+        let deleteTargetId = null;
+
+        // --- Tab switching ---
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('reminders-tab').style.display = tab === 'reminders' ? 'block' : 'none';
+            document.getElementById('settings-tab').style.display = tab === 'settings' ? 'block' : 'none';
+            document.querySelectorAll('.tab')[tab === 'reminders' ? 0 : 1].classList.add('active');
+            if (tab === 'settings') loadSettings();
+        }
+
+        // --- Toast ---
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // --- Reminders ---
+        async function loadReminders() {
+            try {
+                const res = await fetch(`${API}/reminders`);
+                const reminders = await res.json();
+                renderReminders(reminders);
+                const el = document.getElementById('last-updated');
+                if (el) {
+                    const now = new Date();
+                    el.textContent = 'Last updated ' + now.toLocaleTimeString();
+                }
+            } catch (e) {
+                showToast('Failed to load reminders', 'error');
+            }
+        }
+
+        function renderReminders(reminders) {
+            const list = document.getElementById('reminder-list');
+            if (reminders.length === 0) {
+                list.innerHTML = '<p style="color:#888; text-align:center; padding:2rem;">No reminders yet. Create one above!</p>';
+                return;
+            }
+            list.innerHTML = reminders.map(r => `
+                <div class="reminder-card ${r.active ? '' : 'inactive'}">
+                    <div class="reminder-info">
+                        <div class="reminder-text">${escapeHtml(r.text)}</div>
+                        <div class="reminder-meta">
+                            <span>Every ${r.frequency_value} ${r.frequency_unit}</span>
+                            <span>Start: ${formatTime(r.start_time)}</span>
+                            ${r.end_time ? `<span>End: ${formatTime(r.end_time)}</span>` : ''}
+                            ${r.active_hours_start ? `<span>Active: ${formatTime(r.active_hours_start)}-${formatTime(r.active_hours_end)}</span>` : ''}
+                            <span class="badge ${r.active ? '' : 'badge-inactive'}">${r.active ? 'Active' : 'Paused'}</span>
+                        </div>
+                    </div>
+                    <div class="reminder-actions">
+                        <button class="btn btn-secondary btn-sm" data-action="toggle" data-id="${escapeHtml(r.id)}" data-active="${r.active}">${r.active ? 'Pause' : 'Resume'}</button>
+                        <button class="btn btn-secondary btn-sm" data-action="edit" data-id="${escapeHtml(r.id)}">Edit</button>
+                        <button class="btn btn-danger btn-sm" data-action="delete" data-id="${escapeHtml(r.id)}" data-text="${escapeHtml(r.text)}">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Attach handlers via listeners (not inline onclick) so reminder text
+            // and UUID ids can contain any characters without breaking the markup.
+            list.querySelectorAll('button[data-action]').forEach(btn => {
+                const id = btn.getAttribute('data-id');
+                const action = btn.getAttribute('data-action');
+                btn.addEventListener('click', () => {
+                    if (action === 'toggle') {
+                        toggleReminder(id, btn.getAttribute('data-active') === 'true');
+                    } else if (action === 'edit') {
+                        editReminder(id);
+                    } else if (action === 'delete') {
+                        showDeleteModal(id, btn.getAttribute('data-text'));
+                    }
+                });
+            });
+        }
+
+        async function saveReminder() {
+            const editId = document.getElementById('edit-id').value;
+            const data = {
+                text: document.getElementById('text').value.trim(),
+                frequency_value: parseInt(document.getElementById('frequency_value').value),
+                frequency_unit: document.getElementById('frequency_unit').value,
+                start_time: document.getElementById('start_time').value,
+                end_time: document.getElementById('end_time').value || null,
+                active_hours_start: document.getElementById('active_hours_start').value || null,
+                active_hours_end: document.getElementById('active_hours_end').value || null,
+            };
+
+            if (!data.text) { showToast('Reminder text is required', 'error'); return; }
+            if (!data.start_time) { showToast('Start time is required', 'error'); return; }
+
+            try {
+                const url = editId ? `${API}/reminders/${editId}` : `${API}/reminders`;
+                const method = editId ? 'PUT' : 'POST';
+                const res = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                if (!res.ok) throw new Error('Failed');
+                showToast(editId ? 'Reminder updated!' : 'Reminder created!');
+                resetForm();
+                loadReminders();
+            } catch (e) {
+                showToast('Failed to save reminder', 'error');
+            }
+        }
+
+        async function editReminder(id) {
+            try {
+                const res = await fetch(`${API}/reminders/${id}`);
+                const r = await res.json();
+                document.getElementById('edit-id').value = r.id;
+                document.getElementById('text').value = r.text;
+                document.getElementById('frequency_value').value = r.frequency_value;
+                document.getElementById('frequency_unit').value = r.frequency_unit;
+                document.getElementById('start_time').value = r.start_time;
+                document.getElementById('end_time').value = r.end_time || '';
+                document.getElementById('active_hours_start').value = r.active_hours_start || '';
+                document.getElementById('active_hours_end').value = r.active_hours_end || '';
+                document.getElementById('form-title').textContent = 'Edit Reminder';
+                document.getElementById('cancel-btn').style.display = 'inline-block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (e) {
+                showToast('Failed to load reminder', 'error');
+            }
+        }
+
+        async function toggleReminder(id, currentActive) {
+            try {
+                await fetch(`${API}/reminders/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active: !currentActive }),
+                });
+                showToast(currentActive ? 'Reminder paused' : 'Reminder resumed');
+                loadReminders();
+            } catch (e) {
+                showToast('Failed to update reminder', 'error');
+            }
+        }
+
+        function showDeleteModal(id, text) {
+            deleteTargetId = id;
+            document.getElementById('delete-reminder-text').textContent = `"${text}"`;
+            document.getElementById('delete-modal').classList.add('show');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.remove('show');
+            deleteTargetId = null;
+        }
+
+        async function confirmDelete() {
+            if (!deleteTargetId) return;
+            try {
+                await fetch(`${API}/reminders/${deleteTargetId}`, { method: 'DELETE' });
+                showToast('Reminder deleted');
+                closeDeleteModal();
+                loadReminders();
+            } catch (e) {
+                showToast('Failed to delete reminder', 'error');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('edit-id').value = '';
+            document.getElementById('text').value = '';
+            document.getElementById('frequency_value').value = '1';
+            document.getElementById('frequency_unit').value = 'days';
+            document.getElementById('start_time').value = '08:00';
+            document.getElementById('end_time').value = '';
+            document.getElementById('active_hours_start').value = '';
+            document.getElementById('active_hours_end').value = '';
+            document.getElementById('form-title').textContent = 'New Reminder';
+            document.getElementById('cancel-btn').style.display = 'none';
+        }
+
+        // --- Settings ---
+        async function loadSettings() {
+            try {
+                const res = await fetch(`${API}/settings`);
+                const settings = await res.json();
+                document.getElementById('settings_start').value = settings.default_active_hours_start;
+                document.getElementById('settings_end').value = settings.default_active_hours_end;
+                document.getElementById('settings_time_format').value = settings.time_format || '12h';
+                window.currentTimeFormat = settings.time_format || '12h';
+            } catch (e) {
+                showToast('Failed to load settings', 'error');
+            }
+        }
+
+        async function saveSettings() {
+            const data = {
+                default_active_hours_start: document.getElementById('settings_start').value,
+                default_active_hours_end: document.getElementById('settings_end').value,
+                time_format: document.getElementById('settings_time_format').value,
+            };
+            try {
+                const res = await fetch(`${API}/settings`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+                if (!res.ok) throw new Error('Failed');
+                window.currentTimeFormat = data.time_format;
+                loadReminders(); // Re-render with new format
+                showToast('Settings saved!');
+            } catch (e) {
+                showToast('Failed to save settings', 'error');
+            }
+        }
+
+        // --- Utilities ---
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTime(time24) {
+            if (!time24) return '';
+            if (window.currentTimeFormat === '24h') return time24;
+            const [h, m] = time24.split(':');
+            const hour = parseInt(h);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+            return `${hour12}:${m} ${ampm}`;
+        }
+
+        // --- Init ---
+        window.currentTimeFormat = '12h';
+        // Load settings first (for time format), then reminders
+        (async function() {
+            try {
+                const res = await fetch(`${API}/settings`);
+                const settings = await res.json();
+                window.currentTimeFormat = settings.time_format || '12h';
+            } catch(e) {}
+            loadReminders();
+        })();
+    </script>
+</body>
+</html>
